@@ -6,13 +6,25 @@ import Account from "../components/Account";
 import ETHBalance from "../components/ETHBalance";
 import useEagerConnect from "../hooks/useEagerConnect";
 import usePersonalSign, { hexlify } from "../hooks/usePersonalSign";
+import {
+  Text,
+  Flex
+} from '@chakra-ui/react';
+import React from 'react';
+import Song from '../Components/Song';
+import Controls from '../Components/Controls';
+import { songsState, nftState } from '../utils/atom';
+import { useRecoilValue, useRecoilState } from 'recoil';
+import { RecoilRoot } from 'recoil';
+import { useEffect } from 'react';
 
-export default function Home() {
+const Home = ({nft, song}) => {
   const { account, library } = useWeb3React();
 
   const triedToEagerConnect = useEagerConnect();
 
   const sign = usePersonalSign();
+  
 
   const handleSign = async () => {
     const msg = "Next Web3 Boilerplate Rules";
@@ -23,67 +35,50 @@ export default function Home() {
 
   const isConnected = typeof account === "string" && !!library;
 
+  
   return (
-    <div>
-      <Head>
-        <title>Next Web3 Boilerplate</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    
+    <>
+      <Flex h='100vh' flexDir='column'>
+        <Text fontWeight='200' textAlign='center' fontSize={30}>Songs</Text>
+        {nft ?
+          <>
+            <Flex mb={10} ml={10} mr={10} flexDir='column'>
+              {nft.map((data, index) => (
+                <>
+                  {data.name !== null
+                    ?
+                    <Song song={song} index={index} key={index} nft={data} />
+                    : null}
+                </>
+              ))}
+            </Flex>
 
-      <header>
-        <nav>
-          <Link href="/">
-            <a>Next Web3 Boilerplate</a>
-          </Link>
+          </>
+          : <Text>Nothing to see here</Text>}
+        <Controls song={song} />
+      </Flex>
+    </>
+  )
+                  }
+  
 
-          <Account triedToEagerConnect={triedToEagerConnect} />
-        </nav>
-      </header>
 
-      <main>
-        <h1>
-          Welcome to{" "}
-          <a href="https://github.com/mirshko/next-web3-boilerplate">
-            Next Web3 Boilerplate
-          </a>
-        </h1>
+export async function getServerSideProps() {
+  
+  const options = { method: 'GET' };
+  const req1 = await fetch('https://api.opensea.io/api/v1/assets?order_direction=desc&offset=0&limit=20', options)
+  const data1 = await req1.json()
+  
+  const req2 = await fetch('https://api.opensea.io/api/v1/asset/0x3e43944d977dea22511da6d33c0cab666a604515/110', options)
+  const data2 = await req2.json()
 
-        {isConnected && (
-          <section>
-            <ETHBalance />
-            <button onClick={handleSign}>Personal Sign</button>
-          </section>
-        )}
-      </main>
-
-      <style jsx>{`
-        nav {
-          display: flex;
-          justify-content: space-between;
-        }
-
-        main {
-          text-align: center;
-        }
-      `}</style>
-
-      <style jsx global>{`
-        body {
-          margin: 0;
-        }
-
-        html {
-          font-family: sans-serif, Apple Color Emoji, Segoe UI Emoji,
-            Segoe UI Symbol, Noto Color Emoji;
-          line-height: 1.5;
-        }
-
-        *,
-        *::after,
-        *::before {
-          box-sizing: border-box;
-        }
-      `}</style>
-    </div>
-  );
+  return {
+    props: { 
+      nft: data1.assets,
+      song: data2 
+    }
+  }
 }
+
+export default Home
